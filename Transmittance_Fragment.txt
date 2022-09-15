@@ -1,0 +1,65 @@
+//Shader created using the online book LearnOpenGL by Joey de Vries https://learnopengl.com/About
+// and Chapter 14: Surface Characteristics, 14.1 Refraction https://www.scss.tcd.ie/Michael.Manzke/CS7055/GLSL/GLSL-3rdEd-refraction.pdf 
+// Simulating Dispersion With OpenGL was also used to create this shader https://www.taylorpetrick.com/blog/post/dispersion-opengl?fbclid=IwAR2ulWQg_A4-GMpET9MxYMQbOSas-VSuyWBAdufNdS42CSWYxOXPChHfZbc
+
+
+#version 330 core
+out vec4 FragColor;
+
+in vec3 Normal;
+in vec3 Position;
+
+uniform vec3 cameraPos;
+uniform samplerCube skybox;
+
+float fresnelScale = 5.0f;
+float fresnelPower = 4.0f;
+
+uniform float fresnelBias;
+uniform float Ref_Index;
+uniform float RefractR;
+uniform float RefractG;
+uniform float RefractB;
+
+
+// Linear interpolation for 
+vec4 lerp(vec4 a, vec4 b, float s){
+    return vec4(a+(b-a)*s);
+}
+
+void main()
+{             
+    // Get ratio of refraction from air to our object
+    float ratio = 1.00 / Ref_Index;
+    vec3 N = normalize(Normal);
+    vec3 I = normalize(Position - cameraPos);
+    vec3 Reflect = reflect(I, N);
+    
+    // Use these variations to create the Chromatic Dispersion effect
+    // Differences in how light waves are refracted create this effect
+    float ratio_R = ratio * RefractR;
+    float ratio_G = ratio * RefractG;
+    float ratio_B = ratio * RefractB;
+
+    vec3 refractR = refract(I, normalize(Normal), ratio_R);
+    vec3 refractG = refract(I, normalize(Normal), ratio_G);
+    vec3 refractB = refract(I, normalize(Normal), ratio_B);
+
+    vec4 refractColour = vec4(0.0f);
+
+    refractColour.r = texture(skybox, refractR).r;
+    refractColour.g = texture(skybox, refractG).g;
+    refractColour.b = texture(skybox, refractB).b;
+    refractColour.a = 1.0f;
+
+    // This is an approximation equation for the Fresnel effect
+    float Fresnel = fresnelBias + fresnelScale * pow(min(0.0, 1.0 - dot(I,N)), fresnelPower);
+
+    vec4 reflectColour = vec4(texture(skybox, Reflect).rgb, 1.0);
+
+
+    vec4 result = lerp(refractColour, reflectColour, Fresnel);
+
+
+    FragColor = result;
+}

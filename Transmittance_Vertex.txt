@@ -1,0 +1,20 @@
+//Shader created using the online book LearnOpenGL by Joey de Vries https://learnopengl.com/About
+// and Chapter 14: Surface Characteristics, 14.1 Refraction https://www.scss.tcd.ie/Michael.Manzke/CS7055/GLSL/GLSL-3rdEd-refraction.pdf 
+
+#version 330 core
+layout (location = 0) in vec3 vertex_position;
+layout (location = 1) in vec3 vertex_normal;
+
+out vec3 Normal;
+out vec3 Position;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
+
+void main()
+{
+    Normal = mat3(transpose(inverse(model))) * vertex_normal;
+    Position = vec3(model * vec4(vertex_position, 1.0));
+    gl_Position = proj * view * vec4(Position, 1.0);
+}
